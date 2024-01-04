@@ -1,0 +1,37 @@
+version: "3"
+services:
+  nginx:
+    container_name: nginx
+    build: ./docker/nginx
+    ports:
+      - 8000:80
+    volumes:
+      - ./app:/var/www/html
+    working_dir: /etc/nginx
+    links:
+      - django
+  django:
+    container_name: django
+    build: ./docker/django
+    volumes:
+      - ./app:/var/www/html
+    working_dir: /var/www/html
+    command: /bin/bash -c "python ./manage.py makemigrations && python ./manage.py migrate && uwsgi --ini /uwsgi.ini"
+    depends_on:
+      mysql:
+        condition: service_healthy
+  mysql:
+    build: ./docker/mysql
+    container_name: mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - data-volume:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=YOUR_ROOT_PASSWORD
+      - MYSQL_DATABASE=YOUR_DATABASE
+    healthcheck:
+      test: "exit 0"
+
+volumes:
+  data-volume:
